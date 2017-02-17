@@ -1,0 +1,215 @@
+<!DOCTYPE = html>
+
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css">
+  <title>Weather Reporter</title>
+
+  <style>
+  @import url('https://fonts.googleapis.com/css?family=Amatic+SC');
+
+  h1 {
+    font-family: Amatic SC, cursive;
+    text-align: center;
+  }
+  body {
+    font-family: Amatic SC, cursive;
+    background: radial-gradient(gray, black);
+    color: white;
+  }
+  footer {
+    text-align: center;
+  }
+  button {
+    margin: 1% auto;
+  }
+
+  #displayContainer {
+    width: 70%;
+    height: 50%;
+    position: relative;
+    perspective: 800px;
+    display: block;
+    margin: 2% auto;
+    background-color: transparent;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  #card {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    transform-style: preserve-3d;
+    transition: transform 1s;
+    transform-origin: center right;
+  }
+  #card figure {
+    margin: 0;
+    display: block;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+  }
+  #card .front {
+  }
+  #card .back {
+    transform: rotateY(180deg);
+  }
+  .flipped {
+    transform: translateX(-100%) rotateY(-180deg);
+  }
+  .cardBorder {
+    border: solid white;
+    border-radius: 4px;
+  }
+
+  </style>
+</head>
+
+<body>
+
+<!-- begin test for card flipping weather app -->
+<section id="displayContainer">
+  <div id="card">
+
+    <figure class="front cardBorder">
+
+
+      <h1 id="userCity"></h1>
+
+      <div style="display:flex; justify-content:space-around;">
+        <div style="display:inline-block;">
+          <canvas id="iconBox" width="128" height="128"></canvas>
+        </div>
+        <div  style="display:inline-block">
+          <div id="userTemp" width="128" height="128"></div>
+        </div>
+      </div>
+
+      <div>
+        <h1>Weather in your area: </h1>
+        <h1 id="userSummary"></h1>
+      </div>
+    </figure>
+
+    <figure class="back cardBorder" style="display:flex; flex-direction:column; justify-content:space-around; align-items:center;">
+      <canvas id="iconBoxBack" width="128" height="128"></canvas>
+      <div id="userPrecip"></div>
+      <div id="userHumidity"></div>
+      <div id="userWind"></div>
+    </figure>
+  </div>
+</section>
+
+<h1>Click Center for More Info</h1>
+<p style="text-align: center">Hover to Change Temperature Units</p>
+
+<footer>Coded by Kevin | Powered by <a href="https://darksky.net/poweredby/" style="color: white">Dark Sky API</a></footer>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="skycons.js"></script>
+<script>
+// add a document ready section
+$(document).ready(function(){
+
+// additional features could add
+// background change based on day or night
+// drizzle css when it's raining or snowing
+
+// event listeners
+$("#displayContainer").click(function(){
+  $("#card").toggleClass("flipped");
+})
+
+// for changing F to C functionality
+var tempUnits = "F"; // due to API response
+$("#toggleUnits").click(changeTempUnits); // from old area, can delete
+$("#displayContainer").hover(changeTempUnits);
+function changeTempUnits() {
+  if(userTemp) {
+
+    if(tempUnits == "F"){
+      userTemp = (userTemp - 32) * 5/9;
+      userTemp = Math.round(userTemp * 100)/100;
+      tempUnits = "C";
+      $("#userTemp").html("<h1>" + userTemp + String.fromCharCode(176) + tempUnits + "</h1>");
+      return ;
+    } else if (tempUnits =="C") {
+      userTemp = (userTemp * 9/5) + 32;
+      userTemp = Math.round(userTemp * 100)/100;
+      tempUnits = "F";
+      $("#userTemp").html("<h1>" + userTemp + String.fromCharCode(176) + tempUnits + "</h1>");
+      return ;
+
+    }
+  } else {
+    window.alert("You don't have any data to change units for yet!");
+  }
+}
+
+//get user location
+var userLat = "";
+var userLon = "";
+
+$.getJSON("http://ip-api.com/json", function(data){
+  userLat = data.lat;
+  userLon = data.lon;
+  $("#userCity").html(data.city + ', ' + data.regionName);
+  console.log("userLat: " + userLat + " userLon: " + userLon);
+  getWeather(); //get weather without user input
+})
+
+//list of vars want to display to users
+var userIcon = "";
+var userTemp = "";
+var userHumidity = "";
+var userPrecip = "";
+var userWind = "";
+
+function getWeather() {
+  var myKey = 'b5167449486691e066f2ecf9b7e0de62';
+  var apiUrl = 'https://api.darksky.net/forecast/' + myKey + "/" + userLat + "," + userLon;
+  console.log(apiUrl);
+  $.ajax({
+    url: apiUrl,
+    dataType: 'jsonp',
+    success: function(response) {
+      console.log(response);
+      userIcon = response.currently.icon;
+      userTemp = response.currently.temperature;
+      userHumidity = response.currently.humidity;
+      userPrecip = response.currently.precipProbability;
+      userWind = response.currently.windSpeed;
+      userSummary = response.minutely.summary;
+
+      console.log(userIcon +" "+ userHumidity+" " + userPrecip+" " + userWind + " " + userSummary);
+
+      //new section
+      $("#userTemp").html("<h1>" + userTemp + String.fromCharCode(176) + tempUnits + "</h1>");
+      $("#userPrecip").html("<h1>Precipitation: " + userPrecip + "%</h1>");
+      $("#userWind").html("<h1>Wind Speed: " + userWind + " mi/hr</h1>");
+      $("#userHumidity").html("<h1>Humidity: " + userHumidity + "%</h1>");
+      $("#userSummary").html(userSummary);
+
+      skycons.add(document.getElementById("iconBox"), userIcon);
+      skycons.add(document.getElementById("iconBoxBack"), userIcon);
+    }
+  })
+}
+
+//Skycons
+var skycons = new Skycons({"color": "white"});
+skycons.play();
+
+
+}); //end of document ready script
+
+</script>
+
+</body>
+</html>
