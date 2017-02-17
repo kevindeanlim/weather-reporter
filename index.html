@@ -156,6 +156,7 @@ function changeTempUnits() {
 var userLat = "";
 var userLon = "";
 
+//note that because of https issues, using this close distance api instead of chrome geolocation
 $.getJSON("http://ip-api.com/json", function(data){
   userLat = data.lat;
   userLon = data.lon;
